@@ -2754,3 +2754,134 @@ npm start                            # Inicia la aplicación React
 
 
 
+### enrutados en el cliente
+
+History API https://developer.mozilla.org/en-US/docs/Web/API/History_API
+
+La History API proporciona una interfaz para manipular el historial de sesiones del navegador (la historia del navegador que el usuario ha navegado en la pestaña actual). Es parte del estándar HTML5 y proporciona funciones sencillas para interactuar con la pila de historial del navegador. Puedes utilizar esta API para modificar el historial del navegador sin necesidad de recargar la página.
+
+Aquí hay algunas cosas que puedes hacer con la History API:
+
+* Manipular el historial del navegador: Puedes añadir, modificar y eliminar entradas del historial.
+* Navegar por el historial: Puedes moverte hacia adelante y hacia atrás a través del historial del navegador, de manera similar a los botones "Atrás" y "Adelante" del navegador.
+* Guardar estados en el historial: Puedes asociar un estado específico del JavaScript con una entrada del historial. Por ejemplo, si estás construyendo una aplicación de página única (SPA), puedes guardar el estado de la página para que el usuario pueda volver a ella usando el botón "Atrás" del navegador.
+
+Funciones principales de la History API:
+
+* history.pushState(): Añade una entrada al historial del navegador sin cambiar la página que el usuario está viendo. Esto es útil para cambiar la URL visible sin recargar la página, como en una aplicación de página única (SPA).
+* history.replaceState(): Similar a pushState, pero modifica la entrada actual del historial en lugar de crear una nueva. Esto es útil cuando quieres actualizar la URL o el estado de la historia debido a una acción del usuario, pero no quieres que esa acción cree una nueva entrada en el historial.
+* history.back(): Funciona como el botón "Atrás" del navegador, llevando al usuario a la página anterior en el historial.
+* history.forward(): Funciona como el botón "Adelante" del navegador, llevando al usuario a la página siguiente en el historial.
+* history.go(): Permite navegar a una página específica dentro del historial del navegador, donde se puede pasar un número entero como argumento para moverse esa cantidad de pasos a través del historial (por ejemplo, -1 es igual a history.back() y 1 es igual a history.forward()).
+
+La History API es fundamental en las aplicaciones de página única, ya que permite actualizar la URL visible para el usuario sin recargar la página completa, lo cual es crucial para la experiencia del usuario y el rendimiento de la aplicación. Además, facilita la gestión de estados en aplicaciones web complejas, manteniendo consistente la funcionalidad de navegación del navegador.
+
+
+**React Router** Client side routing
+
+Objetivo: sincroniza la url del browser sincronizada con mi lista. No salimos del servidor.
+
+React Router es una biblioteca de enrutamiento estándar para React, una biblioteca de JavaScript para construir interfaces de usuario. React Router permite la navegación entre distintas componentes en una aplicación React, manejando la sincronización entre la URL en la barra de direcciones del navegador y la vista que se muestra al usuario. Esto es particularmente importante en aplicaciones de una sola página (SPA, por sus siglas en inglés), donde la navegación tradicional de recargar la página no es deseada.
+
+React Router utiliza la History API bajo el capó para mantener la interfaz de usuario y la URL sincronizadas. Aquí hay algunas cosas que React Router facilita:
+
+1. Navegación Declarativa: Puedes definir rutas utilizando componentes de React, lo que permite una forma declarativa de mapear rutas a tus componentes.
+2. Navegación Dinámica: Con React Router, puedes manejar rutas dinámicas y parámetros de URL, lo que es útil para páginas de detalles de productos, perfiles de usuario y otras páginas dinámicas.
+3. Navegación Anidada: Permite definir rutas dentro de rutas, lo que es útil para crear aplicaciones con muchas capas de navegación.
+4. Componentes de Navegación: React Router proporciona componentes como `<Link>`, `<NavLink>`, `<Outlet>` y `<Routes>`, que facilitan la creación de enlaces de navegación y la representación de componentes basados en la URL actual.
+5. Gestión del Historial: Aunque puedes interactuar directamente con la History API, React Router maneja esto por ti y proporciona herramientas para trabajar con el historial del navegador de una manera que se integra bien con las aplicaciones React.
+6. Transiciones de Rutas: Puedes fácilmente configurar animaciones y comportamientos cuando el usuario navega entre rutas.
+7. Rutas Protegidas: React Router facilita la creación de rutas que requieren autenticación, permitiéndote proteger ciertas partes de tu aplicación.
+
+En resumen, React Router ofrece una capa de abstracción por encima de la History API para trabajar con el sistema de enrutamiento en una aplicación React. Permite desarrollar aplicaciones complejas de una sola página con enrutamiento que imita la navegación tradicional de la web, sin perder las ventajas de tener una SPA.
+
+```sh
+npm install react-router-dom
+```
+
+La manera más basica de utilizar, es ir al index y dentro del index hacerun import `import { BrowserRouter } from 'react-router-dom';` y en volver toda la aplicacion con `</BrowserRouter>` así lo creamos y lo ponemos en contexto, 
+
+```js
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthContextProvider initiallyLogged={!!accessToken}>
+        <App />
+      </AuthContextProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
+```
+
+así le permites utilizarlo. Esto es lo mismo que pone en la diapositiva / slide
+
+```js
+const router = createBrowserRouter(
+
+)
+...
+
+<RouterProvider router={router} /> 
+```
+en vez de pasar el objeto `router` nosotros haremos la manera facil de importat en `index` y envolver la palicacion `</BrowserRouter>`. En algún monento necesitaremos el objeto para utilizarlo por mi mismo pero ya lo haremos.
+
+Todo lo que quede dentro de aquí `</BrowserRouter>` puedo utilizar todo. Luego necesitaremos crear rutas dentro de `app`. Tenemos para crea rutas varios componentes `Routes` es para decir que harás una agregacion de rutas
+
+`App()` 
+
+Nuestro componente Router sirve para inticar `aquí dentro quiero meter rutas` para hacer una agregacion de rutas. Queremos meter rutas a todo esto
+
+```js
+  return isLogged ? ( 
+          <Layout>
+            <TweetsPage />
+             {/* <NewTweetPage/> */}
+              </>
+          <Layout/>
+              ) : (
+          <LoginPage />
+            )}
+        );
+```
+
+Vamos is asociando rutas por cada una de laspñaginas y lo definimos todo dentro de un `<Routes/>` 
+
+Los componentes `<Route></Route>` han de ser siempre como hijos directos de `<Routes>`
+
+```js
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+```
+
+Les estoy diciendo que, quiero que la ruta `/login` esté asociada con el componente `<LoginPage></LoginPage>` que es `import LoginPage from './pages/auth/LoginPage';` para asociar una ruta le pasas ptah `path="/login"` y el elemento `<LoginPage />`
+
+En este momento si vas a `localhost:3000/Login` pintará la pag pero si vas a `localhost:3000/tweets` no hará nada porque no está resolviendo.
+
+Definimos una ruta dinámica: `<Route path=":tweetId"` con los : y luego dentro de elemento vas a tener acceso y te servirá para que el componete pida el tweet correspondiente `element={<Layout ><div>Hola Tweet</div><Layout />`
+
+Redirecciones: `<Route path="/" element={<Navigate to="/tweets" />} />` la ruta path/ no es neesarrio meterle un element simplemente envíale a /tweets 
+```js
+import { Routes, Route, Navigate } from 'react-router-dom';
+
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/tweets" element={<Layout />}>
+        <Route index element={<TweetsPage />} />
+        <Route path=":tweetId" element={<TweetPage />} />
+        <Route path="new" element={
+            <RequireAuth>
+              <NewTweetPage />
+            </RequireAuth>
+          }
+        />
+      </Route>
+      <Route path="/" element={<Navigate to="/tweets" />} />
+      <Route path="/404" element={<div>404 | Not found</div>} />
+      <Route path="*" element={<Navigate to="/404" />} />
+    </Routes>
+  );
+}
+
+...
+
