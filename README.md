@@ -2733,3 +2733,24 @@ te da fallo en el login porque tienes que quitar `<AuthContextProvider>` al app
 ```
 
 esto es porque en el indes ya está `<AuthContextProvider>` y lo lee dos veces
+
+
+### Descargo cambios de repo remoto
+----
+
+SE HAN HECHO CAMBIOS DESDE EL REPOSITORIO Y VOY A INTRODUCIR ESTOA CAMBIO VÍA GIRHUB:
+
+https://github.com/KeepCodingWeb15/twitter-react/commit/a9f1b07ade3e63703cb69bf840988630b04615d3
+
+```sh
+git clone https://github.com/KeepCodingWeb15/twitter-react/tree/main
+cd twitter-react
+git checkout a9f1b07                 # hash-del-commit cuando se hicienreon cambios
+npm install                          # Instala las dependencias del repo descargado
+npm start                            # Inicia la aplicación React
+```
+
+----
+
+
+
