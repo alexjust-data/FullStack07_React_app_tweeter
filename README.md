@@ -2938,20 +2938,20 @@ me cro una nueva carpeta para `tweets/TweetPage/`  y dentro `index.js` y `tweets
 
 └── tweets
     ├── NewTweetPage
-    │   ├── NewTweetPage.css
-    │   ├── NewTweetPage.js
-    │   └── index.js
+    │   ├── NewTweetPage.css
+    │   ├── NewTweetPage.js
+    │   └── index.js
     ├── TweetPage
-    │   ├── TweetPage.js
-    │   └── index.js
+    │   ├── TweetPage.js
+    │   └── index.js
     ├── TweetsPage
-    │   ├── TweetsPage.css
-    │   ├── TweetsPage.js
-    │   ├── TweetsPage.module.css
-    │   └── index.js
+    │   ├── TweetsPage.css
+    │   ├── TweetsPage.js
+    │   ├── TweetsPage.module.css
+    │   └── index.js
     ├── components
-    │   ├── LikeButton.css
-    │   ├── LikeButton.js
-    │   ├── Tweet.css
-    │   └── Tweet.js
+    │   ├── LikeButton.css
+    │   ├── LikeButton.js
+    │   ├── Tweet.css
+    │   └── Tweet.js
     └── service.js
