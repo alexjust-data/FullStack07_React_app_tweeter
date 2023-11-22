@@ -2859,27 +2859,6 @@ Definimos una **ruta dinámica**: `<Route path="/tweets/:tweetId"` con los **:**
 
 **Redirecciones**: `<Route path="/" element={<Navigate to="/tweets" />} />` la ruta **path/** no es neesarrio meterle un `element` simplemente envíale a `/tweets` 
 
-Esta estructura jerárquica permite una mejor organización del enrutamiento, especialmente en aplicaciones más grandes y complejas. Cada ruta padre puede tener su propio componente y, a su vez, puede incluir rutas hijas que representan diferentes secciones o páginas dentro de ese componente padre.
-
-Cada nivel del árbol representa una ruta en la aplicación, y las rutas hijas representan diferentes secciones o páginas dentro de la ruta padre. Esto permite una navegación clara y estructurada en la aplicación. La estructura del árbol de rutas se vería así:
-
-* / (raíz)
-* * Redirige a /tweets
-* /login
-* * Muestra LoginPage
-* /tweets (utiliza Layout)
-* * / (index)
-* * * Muestra TweetsPage
-* * /:tweetId
-* * * Muestra TweetPage (detalles de un tweet específico)
-* /new
-* * Requiere autenticación (RequireAuth)
-* * Muestra NewTweetPage (crear nuevo tweet)
-* /404
-* * Muestra un mensaje de error 404
-* `*`(cualquier otra ruta)
-* * Redirige a /404
-
 
 ```js
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -2955,3 +2934,201 @@ me cro una nueva carpeta para `tweets/TweetPage/`  y dentro `index.js` y `tweets
 *    │   ├── Tweet.css  
 *    │   └── Tweet.js  
 *    └── service.js  
+
+
+Creo componente `<TweetPage/>` en `TweetPaje.js`
+
+```js
+import Content from '../../../components/layout/Content';
+
+function TweetPage() {
+
+  return (
+    <Content title="Tweet detail">
+      <div>
+        Tweet detail oes here...
+      </div>
+    </Content>
+  );
+}
+
+export default TweetPage;
+```
+
+`index.js`
+
+```js 
+export { default } from './TweetPage';
+```
+
+Ahora hemos definido las rutas para una primera version de `localhost:300/tweets`
+
+
+#### commit : Nested routes
+
+* 5eaca71d8d48113489c9889068c18dfa698af5f6
+
+**Rutas anidadas**
+
+Esta estructura jerárquica permite una mejor organización del enrutamiento, especialmente en aplicaciones más grandes y complejas. Cada ruta padre puede tener su propio componente y, a su vez, puede incluir rutas hijas que representan diferentes secciones o páginas dentro de ese componente padre.
+
+Cada nivel del árbol representa una ruta en la aplicación, y las rutas hijas representan diferentes secciones o páginas dentro de la ruta padre. Esto permite una navegación clara y estructurada en la aplicación. La estructura del árbol de rutas se vería así:
+
+* / (raíz)
+* * Redirige a /tweets
+* /login
+* * Muestra LoginPage
+* /tweets (utiliza Layout)
+* * / (index)
+* * * Muestra TweetsPage
+* * /:tweetId
+* * * Muestra TweetPage (detalles de un tweet específico)
+* /new
+* * Requiere autenticación (RequireAuth)
+* * Muestra NewTweetPage (crear nuevo tweet)
+* /404
+* * Muestra un mensaje de error 404
+* `*`(cualquier otra ruta)
+* * Redirige a /404
+
+----
+
+Ahora vamos hacer que el pajarito de la cabecera sea un enlace a home. Vamos a `srd/components/layout/header.js`
+
+```js
+import { Link, NavLink } from 'react-router-dom';
+```
+
+envuelvo el nodo que quiera enlazar; `to="/"` me enlaza a donde yo quiera que vaya, en este caso me lleva a /home
+
+```js
+      <Link to="/">
+        <div className="header-logo">
+          <Icon width={32} height={32} fill="red" />
+          {/* <img src={logo} alt="twitter-react" /> */}
+        </div>
+      </Link>
+```
+
+podrías linkar lo que quieras, className es asignacion de estyles className="header-button" 
+
+```js
+<nav className="header-nv">
+  <Link to="/tweets/new">New Tweet</Link>
+  // Crea un enlace que lleva al usuario a la ruta '/tweets/new' para publicar un nuevo tweet.
+
+  <Link to="/tweets/new">New Tweet</Link>
+  // Este es un enlace duplicado al anterior, probablemente debería llevar a una ruta diferente.
+
+  <AuthButton className="header-button" />
+  // Inserta un botón de autenticación, posiblemente para iniciar sesión o cerrar sesión, 
+  // dependiendo del estado de autenticación del usuario.
+</nav>
+```
+
+Linkar dinamicamente
+
+```js
+<Link to={`/tweets/${id}`}>
+  <Tweet {...t weet} />
+</Link>
+```
+
+
+Vamos a `TweetsPage.js` para el componente `<TweetsPage />`
+
+```js
+  return (
+    <Content title="What's going on...">
+      <div className="tweetsPage"> // Contenedor con una clase CSS `tweetsPage`.
+
+        {tweets.length ? ( // Si array `tweets` no está vacío), se ejecuta el siguiente bloque.
+          <ul>
+            // Lista no ordenada para mostrar los tweets.
+
+            {tweets.map(({ id, ...tweet }) => (
+              // Mapeo de cada tweet en el array `tweets`. `id` y el resto de propiedades del tweet se extraen.
+
+              <li key={id}>
+                // Elemento de lista para cada tweet. `key={id}` es importante para la eficiencia en el renderizado.
+
+                <Link to={`${id}`}>
+                  // Enlace a la ruta del tweet individual. `to={`${id}`}` lleva a la ruta del tweet específico.
+
+                  <Tweet {...tweet} />
+                  // Componente `Tweet` para mostrar el contenido del tweet. 
+                  // Se pasan todas las propiedades del tweet como props.
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyList />
+          // Si no hay tweets, se muestra el componente `EmptyList`.
+        )}
+      </div>
+    </Content>
+  );
+}
+```
+
+
+**NavLink**
+
+marchea la ruta que tengas en ese momento, y si el `to=` de ese navLink coincide con la ruta que hay en la `url` le pasa una clase a este `nav` y tu con el estilado puedes hacer un style para ese elemento . La tipica barra de navegacion, donde hay listado de enlaces , lo que hacen las aplicaciones es, la ruta que se ha seleccionado... te la pones con un estilo diferente. Remarca cual de tus enlaces de navegacion te indica que ese enlace corresponde a ese estilo. Por ejemplo si estoy en la página "New Tweet" ese texto del boton que pertenece a esa páginba estará en azul.
+
+es decir aplica el `.active` en el estile .css . Cuando le pasas el `end` al final le estas diciendo que se active cuando la ruta coincida con toda la ruta `<NavLink to="/tweets" className={navItemClassName} end>` marcas con un determinado estile el enlace a la ruta que tengas en ese momenot. Al que haga `match`
+
+cuando le pasas un className de tipo funcion `className={navItemClassName}` está recibiendo `clasName={ isActive }) => (isActive ? { color: 'red' } : null` si está activo le plicas si no no.
+
+Fíjate que en `Header.css` tiene `.header-nav .active {color: rgba(29, 161, 242, 1);}` entonces se cambia al azul si hay un eelmento activo
+
+En `Header.js`
+```js
+      <nav className="header-nav">
+
+        <NavLink to="/tweets/new" replace className={navItemClassName}
+          // style={({ isActive }) => (isActive ? { color: 'red' } : null)}
+        >New Tweet</NavLink>
+
+        <NavLink to="/tweets" className={navItemClassName} end>See latest tweets</NavLink>
+
+        <AuthButton className="header-button" />
+      </nav>
+```
+
+Ahora nos vamos al `login` que nos tendría que llevar a loguearnos. Lo que sucede es que ahora mi boton de logout es un boton no es un Link y quiero que siga teniendo pinta de boton. Hay un truco en styleComponents que permite definir un componente con un determinado css pero que permite renderizar cualquier otro componente en lugar de un button renderiza un Link  `<Button as={Link}` le dices que es un button pero por debajo un link y así le puedes pasar un `to="/login" ` para enviarlo al path requerido 
+
+https://styled-components.com/docs/api#as-polymorphic-prop
+
+```js
+return isLogged ? (
+  <Button onClick={handleLogoutClick} className={className}>
+    Logout
+  </Button>
+) : (
+  <Button as={Link} to="/login" $variant="primary" className={className}>
+    Login
+  </Button>
+);
+```
+
+**replace**
+
+todos los link tiene una propiedad `replace` que hace es pasar la propiedad `replace` a tru y si la quitas pasa a false. ¿que hace?
+
+estoy aqui http://localhost:3000/tweets luego a http://localhost:3000/login y cada navegacion me guarda en el hisorico, Lo que hace replace es que si vuelces a http://localhost:3000/tweets el replace te envía a donde quieres pero sin introducir una nueva entrada en "history" de la memoria de navegacion de la web. No va acumulando entradas iguales, 
+
+Este comportamiento es útil en varios casos de uso, como evitar entradas duplicadas en el historial o cuando una página es solo un paso intermedio en un proceso (como una página de redirección después de iniciar sesión) y no quieres que el usuario pueda volver a ella mediante el botón de retroceso del navegador.
+
+
+**Hooks**
+nos da un extra para tener una experiencia de navegacion del usuario buena
+
+* Gestión del Estado: El hook useState permite a los componentes funcionales tener su propio estado local, algo que antes solo era posible en componentes de clase.
+* Efectos Secundarios en Componentes Funcionales: El hook useEffect es utilizado para manejar efectos secundarios (como solicitudes de datos, suscripciones, o cambios manuales en el DOM) en componentes funcionales.
+* Contexto: useContext permite a los componentes funcionales acceder al contexto de React, una forma de pasar datos a través del árbol de componentes sin tener que pasar props manualmente en cada nivel.
+
+* Referencias a Elementos del DOM: useRef es usado para obtener una referencia directa a un elemento del DOM o a una instancia de un componente.
+
+Personalización y Reutilización de Lógica: Los hooks personalizados (custom hooks) permiten extraer componentes lógicos para reutilizarlos en otros componentes, mejorando la modularidad y reusabilidad del código.
