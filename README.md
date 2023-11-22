@@ -3123,12 +3123,54 @@ Este comportamiento es útil en varios casos de uso, como evitar entradas duplic
 
 
 **Hooks**
+
 nos da un extra para tener una experiencia de navegacion del usuario buena
 
 * Gestión del Estado: El hook useState permite a los componentes funcionales tener su propio estado local, algo que antes solo era posible en componentes de clase.
 * Efectos Secundarios en Componentes Funcionales: El hook useEffect es utilizado para manejar efectos secundarios (como solicitudes de datos, suscripciones, o cambios manuales en el DOM) en componentes funcionales.
 * Contexto: useContext permite a los componentes funcionales acceder al contexto de React, una forma de pasar datos a través del árbol de componentes sin tener que pasar props manualmente en cada nivel.
-
 * Referencias a Elementos del DOM: useRef es usado para obtener una referencia directa a un elemento del DOM o a una instancia de un componente.
+* Personalización y Reutilización de Lógica: Los hooks personalizados (custom hooks) permiten extraer componentes lógicos para reutilizarlos en otros componentes, mejorando la modularidad y reusabilidad del código.
 
-Personalización y Reutilización de Lógica: Los hooks personalizados (custom hooks) permiten extraer componentes lógicos para reutilizarlos en otros componentes, mejorando la modularidad y reusabilidad del código.
+
+PROTEGIENDO COMPONENTES
+
+Si el usuario sabemos que está logueado queremos evitar que llega `tweets/new` , entonces vamos a proteger esa ruta y que redirija al `login`. Cuando el usuario termine el login nos lleva a la ruta.
+
+Creas un componente àra proteges una ruta. `auth/componentes/RequiereAuth.js` de tal manera que todo lo que envualve con ese componente estará protegido. 
+
+```js
+<Route path="new" element={
+    <RequireAuth>
+      <NewTweetPage />
+    </RequireAuth>
+  }
+```
+
+como servirá para envolver otro elemento, le decimos que tiene children `function RequireAuth({ children }) {`
+
+```js
+import { Navigate, useLocation } from 'react-router'; // navegación y acceso al estado de la ruta actual.
+import { useAuth } from '../context'; // Importa el hook `useAuth` 
+
+function RequireAuth({ children }) {
+  // estos `children` son los componentes que se renderizarán si el usuario está autenticado.
+
+  const location = useLocation(); // Utiliza `useLocation` para acceder a la información sobre la ruta actual.
+  const { isLogged } = useAuth(); // Utiliza `useAuth` para obtener el estado de autenticación del usuario.
+
+  return isLogged ? (
+    children
+  ) : (
+    <Navigate to="/login" state={{ from: location }} />
+  );
+  // Si `isLogged` es verdadero, renderiza `children` (componentes protegidos).
+  // Si `isLogged` es falso, redirige al usuario a `/login`, 
+  // pasando la ubicación actual en el estado para un posible redireccionamiento posterior al inicio de sesión.
+
+}
+
+export default RequireAuth;
+```
+
+`state` permite pasar un objeto de estado a la ruta de destino. En este caso, se está pasando un objeto a la ruta /login. `state={{ from: location }}` está pasando el objeto de ubicación actual a la ruta /login como estado. 
