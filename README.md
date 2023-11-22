@@ -2936,22 +2936,22 @@ function App() {
 
 me cro una nueva carpeta para `tweets/TweetPage/`  y dentro `index.js` y `tweetsPage.js` 
 
-└── tweets
-    ├── NewTweetPage
-    │   ├── NewTweetPage.css
-    │   ├── NewTweetPage.js
-    │   └── index.js
-    ├── TweetPage
-    │   ├── TweetPage.js
-    │   └── index.js
-    ├── TweetsPage
-    │   ├── TweetsPage.css
-    │   ├── TweetsPage.js
-    │   ├── TweetsPage.module.css
-    │   └── index.js
-    ├── components
-    │   ├── LikeButton.css
-    │   ├── LikeButton.js
-    │   ├── Tweet.css
-    │   └── Tweet.js
-    └── service.js
+└── tweets  
+    ├── NewTweetPage  
+    │   ├── NewTweetPage.css  
+    │   ├── NewTweetPage.js  
+    │   └── index.js  
+    ├── TweetPage  
+    │   ├── TweetPage.js  
+    │   └── index.js  
+    ├── TweetsPage  
+    │   ├── TweetsPage.css  
+    │   ├── TweetsPage.js  
+    │   ├── TweetsPage.module.css  
+    │   └── index.js  
+    ├── components  
+    │   ├── LikeButton.css  
+    │   ├── LikeButton.js  
+    │   ├── Tweet.css  
+    │   └── Tweet.js  
+    └── service.js  
