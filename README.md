@@ -2853,11 +2853,34 @@ Los componentes `<Route></Route>` han de ser siempre como hijos directos de `<Ro
 
 Les estoy diciendo que, quiero que la ruta `/login` esté asociada con el componente `<LoginPage></LoginPage>` que es `import LoginPage from './pages/auth/LoginPage';` para asociar una ruta le pasas ptah `path="/login"` y el elemento `<LoginPage />`
 
-En este momento si vas a `localhost:3000/Login` pintará la pag pero si vas a `localhost:3000/tweets` no hará nada porque no está resolviendo.
+En este momento si vas a `localhost:3000/Login` pintará la pag; pero si vas a **`localhost:3000/tweets`** no hará nada porque no está resolviendo.
 
-Definimos una ruta dinámica: `<Route path=":tweetId"` con los : y luego dentro de elemento vas a tener acceso y te servirá para que el componete pida el tweet correspondiente `element={<Layout ><div>Hola Tweet</div><Layout />`
+Definimos una **ruta dinámica**: `<Route path="/tweets/:tweetId"` con los **:** le decimos que el id será dinámico. Y luego dentro de elemento vas a tener acceso y te servirá para que el componete pida el tweet correspondiente `element={<Layout ><div>Hola Tweet</div><Layout />`
 
-Redirecciones: `<Route path="/" element={<Navigate to="/tweets" />} />` la ruta path/ no es neesarrio meterle un element simplemente envíale a /tweets 
+**Redirecciones**: `<Route path="/" element={<Navigate to="/tweets" />} />` la ruta **path/** no es neesarrio meterle un `element` simplemente envíale a `/tweets` 
+
+Esta estructura jerárquica permite una mejor organización del enrutamiento, especialmente en aplicaciones más grandes y complejas. Cada ruta padre puede tener su propio componente y, a su vez, puede incluir rutas hijas que representan diferentes secciones o páginas dentro de ese componente padre.
+
+Cada nivel del árbol representa una ruta en la aplicación, y las rutas hijas representan diferentes secciones o páginas dentro de la ruta padre. Esto permite una navegación clara y estructurada en la aplicación. La estructura del árbol de rutas se vería así:
+
+* / (raíz)
+* * Redirige a /tweets
+* /login
+* * Muestra LoginPage
+* /tweets (utiliza Layout)
+* * / (index)
+* * * Muestra TweetsPage
+* * /:tweetId
+* * * Muestra TweetPage (detalles de un tweet específico)
+* /new
+* * Requiere autenticación (RequireAuth)
+* * Muestra NewTweetPage (crear nuevo tweet)
+* /404
+* * Muestra un mensaje de error 404
+* `*`(cualquier otra ruta)
+* * Redirige a /404
+
+
 ```js
 import { Routes, Route, Navigate } from 'react-router-dom';
 
@@ -2866,22 +2889,69 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      // Asocia la ruta `/login` con el componente `LoginPage`. 
+      // Al visitar `/login`, se mostrará `LoginPage`.
+
       <Route path="/tweets" element={<Layout />}>
+        // Define una ruta base `/tweets` que utiliza `Layout` como su componente.
+        // `Layout` puede incluir elementos comunes como cabecera, pie de página, etc.
+
         <Route index element={<TweetsPage />} />
+        // Ruta por defecto para `/tweets`. Al visitar `/tweets`, se muestra `TweetsPage`.
+        // Es como un "subruta" dentro de `/tweets`.
+
         <Route path=":tweetId" element={<TweetPage />} />
+        // Ruta dinámica bajo `/tweets`. Captura cualquier valor como `tweetId` y 
+        // muestra `TweetPage`, ideal para mostrar detalles de un tweet específico.
+
         <Route path="new" element={
             <RequireAuth>
               <NewTweetPage />
             </RequireAuth>
           }
         />
+        // Ruta `/tweets/new` protegida por `RequireAuth`. Solo usuarios autenticados 
+        // pueden acceder a `NewTweetPage`. Si no están autenticados, `RequireAuth` 
+        // debería redirigirlos o mostrar un mensaje.
+      
       </Route>
+
       <Route path="/" element={<Navigate to="/tweets" />} />
+      // Redirección de la ruta raíz `/` a `/tweets`. Al visitar `/`, el usuario 
+      // es automáticamente redirigido a `/tweets`.
+
       <Route path="/404" element={<div>404 | Not found</div>} />
+      // Ruta `/404` muestra un simple mensaje de error 404 - No encontrado.
+      // esta ruta podrás redirigir al usuario en cualquier momento aquí
+
       <Route path="*" element={<Navigate to="/404" />} />
+      // Cualquier otra ruta no definida anteriormente redirige a `/404`. 
+      // Es una especie de captura-todo para rutas no encontradas.
+
     </Routes>
   );
 }
+```
 
-...
 
+me cro una nueva carpeta para `tweets/TweetPage/`  y dentro `index.js` y `tweetsPage.js` 
+
+└── tweets
+    ├── NewTweetPage
+    │   ├── NewTweetPage.css
+    │   ├── NewTweetPage.js
+    │   └── index.js
+    ├── TweetPage
+    │   ├── TweetPage.js
+    │   └── index.js
+    ├── TweetsPage
+    │   ├── TweetsPage.css
+    │   ├── TweetsPage.js
+    │   ├── TweetsPage.module.css
+    │   └── index.js
+    ├── components
+    │   ├── LikeButton.css
+    │   ├── LikeButton.js
+    │   ├── Tweet.css
+    │   └── Tweet.js
+    └── service.js
