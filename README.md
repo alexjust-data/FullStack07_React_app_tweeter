@@ -3174,3 +3174,689 @@ export default RequireAuth;
 ```
 
 `state` permite pasar un objeto de estado a la ruta de destino. En este caso, se está pasando un objeto a la ruta /login. `state={{ from: location }}` está pasando el objeto de ubicación actual a la ruta /login como estado. 
+
+¿donde se hace esto? en el `loginPage.js` estamos haciendo la comprovacion del logim y cuando hacemos el login cambiamos el estado con `await login(credentials);` y una vez se ha hecho el login cambiamos el estado `onLogin();`
+
+```js
+function LoginPage() {
+  ...
+  const handleSubmit = async event => {
+    event.preventDefault();
+
+      await login(credentials);
+
+      onLogin();
+  };
+  ...
+```
+
+yo en el `LoginPage()` puedo utilizar el mismo `const location = useLocation();` este objeto tendrá acceso al `state={{ from: location }}` es decir, yo voy a poder acceder a través de `location.state.from` a toda la ruta que yo guardo, lo que hacemos es almacenar dentro del location en un objeto from la location y yo la puedo obtener aquí : 
+
+```js
+function LoginPage() {
+  const { onLogin } = useAuth();
+  const [credentials, setCredentials] = useState({username: '',password: '',});
+
+  const location = useLocation();  // la puedo obtener aquí
+  ...
+```
+
+por lo tanto despues de cambiar el estado yo puedo obtener a donde quiero ir `to = location?.state?.from?`
+
+
+```js
+function LoginPage() {
+  ...
+
+  const handleSubmit = async event => {
+    event.preventDefault();
+
+      await login(credentials);
+      onLogin();
+
+      // ? es si tengo
+      const to = location?.state?.from? || '/';
+  };
+  ...
+```
+
+Para hacer la navegación yo tengo un Hook que me permite hacer una función Navegate. Y con esa funcion `const navigate = useNavigate();` le puedo decir que se vaya a `to`
+
+```js
+function LoginPage() {
+  const { onLogin } = useAuth();
+  const [credentials, setCredentials] = useState({username: '',password: '',});
+
+  const location = useLocation(); 
+  const navigate = useNavigate();
+  ...
+```
+
+```js
+function LoginPage() {
+  ...
+  const handleSubmit = async event => {
+    event.preventDefault();
+
+      await login(credentials);
+      onLogin();
+
+      const to = location?.state?.from?.pathname || '/'; // ? es si tengo
+      navigate(to); // le pueod pasar la url o el location .pathname
+  };
+  ...
+```
+
+ahora si estás aqui `http://localhost:3000/tweets/new` y te deslogueas en la app te envía a `http://localhost:3000/login` cuando haces login de nuevo te vuelve a enviar a `http://localhost:3000/tweets/new` porque estabas allí antes y es lo que le has pasado aquí`<Navigate to="/login" state={{ from: location }} />` en el `state` de  `RequireAuth`; entonces esta `state` lo recupera en el `loginPage()`  con el `to` el state de navegacion hace que te redirija directamente aquí. 
+
+Sin embargo si estas en `http://localhost:3000/login` y haces enter y te logueas cuando has hecho login te vas a la `home` que es `http://localhost:3000/tweets` porque en este segundo caso no tenías `state` en `location?.state?.from?. pathname` es decir has reiniciado la aplicación , no has pasado por `RequiereAuth` no tienes state y te envía a `|| '/';`
+
+Ahora puede decirle una vez estás aquí parado `http://localhost:3000/tweets/new` después de hacer logoin, cuando redirijas hacia atrás con la flecha del navegador, que no te vuelve a llevar a la pagina del login porque ya has hecho loguin. Esto se hace con `navigate(to, { replace: true });` y esto es la mimo que si yo coloco un link con un replace a true, que sustituye la ultima entrada del historico.
+
+ `loginPage()`
+
+```js
+navigate(to, { replace: true });
+```
+
+y a la vez en `RequireAuth` le colocas el `replace`
+
+```js
+<Navigate to="/login" replace state={{ from: location }} />
+```
+
+esto sería el flujo completo. Si estás logueado te permite ir a la página de crear un Tweet y si no estás logueado te reenvío a la página de login. Todo a través del objeto state.
+
+**el id del tweet**
+
+cuanod estás en el listado de tweets puedes hacer click en alguno y capturas `http://localhost:3000/tweets/8` el numero de tweets ¿como lo capturas? `TweetPage.js` y allí puedes usar `const params = useParams();`
+
+```js
+function TweetPage() {
+  const params = useParams();
+
+
+  return (
+    <Content title="Tweet detail">
+      <div>
+        Tweet detail {params.tweetId} goes here...
+      </div>
+    </Content>
+  );
+}
+
+export default TweetPage;
+```
+
+Al hacer esto estás dibujando el numero de detalle del tweet que corresponda " Tweet detail 8 goes here..." . Así puede llamar al api y pintar el detalle del tweet.
+
+el `tweetId` sale del nombre que le has pusto enla parte dinámica de la app()
+
+```js
+function App() {
+  return (
+    <Routes>
+        ...
+        <Route path=":tweetId" element={<TweetPage />} />
+```
+
+**Errores**
+
+* ¿qué pasa si un usuario teclea un id de un twet que no existe http://localhost:3000/tweets/85454545454 cuando llamas al api? pues le haces un 404
+* alguien intenta hacer un token desde inpect de local storage
+* ...
+
+vamos ahcer control de estados y errores porque esto es lo que distingue una pap robusta de una pobre
+
+---
+Cuadno un usuario se loguea mal o directamente no estáconectado aparecen errores. estos errores deben ser controlados en el `service,js`
+
+```js
+export const login = credentials => {
+  return client.post('/auth/login', credentials).then(({ accessToken }) => {
+    setAuthorizationHeader(accessToken);
+    storage.set('auth', accessToken);
+  });
+};
+```
+
+pero como tenemos ahí nuestro cliente de axios `return client.post(` podemos ir allí y axios nos da para poder controlar estos errores no esperados y los esperados.
+
+Ya tenía un interceptor para que si la llamada iba bienl le devolvera el dato
+
+```js
+import axios from 'axios';
+
+const client = axios.create({
+  baseURL: process.env.REACT_APP_API_BASE_URL,
+});
+
+client.interceptors.response.use(response => response.data,}
+);
+```
+
+Ahora vamos a pasarle una seguinda funcion que cuadno haya error se ejecuta, cuando la api nos develve una respuesta entre 400 y 500, o si tienes un error del browser. 
+
+```js
+client.interceptors.response.use(
+  response => response.data,
+  error => {
+    if (error.response) {
+      console.log(error.response);
+      // 400/500 server error si te quedas sin red
+      return Promise.reject({
+        message: error.response.statusText,
+        ...error.response,
+        ...error.response.data,
+      });
+    }
+    // Request error
+    return Promise.reject({ message: error.message });
+  },
+);
+```
+
+Vamos a `loginPage.js` ¿donde se puede producir el error? en la llamada al servicio
+
+
+```js
+function LoginPage() {
+  ...
+  const handleSubmit = async event => {
+    event.preventDefault();
+
+    await login(credentials);
+    ...
+```
+
+lo que haremos será hacer un `try/cath` . Si hay un error podríamos mostrar al ususario la típica pastillita de texto con el error. ¿como se reacciona a un error? Pues lo de siemrpe, nos creamos un **estado** para guaradar el posible error `const [error, setError] = useState(null);` de iniciio lo ponemos a null y si hay un error lo almaceno en `error`.
+
+Cuando ahgas el `catch` capturas el error lo almacenas `setError(error);` cuando lo captures el componente renderizará de nuevo y de alguna manera tendrás que decirle abajo en `return{}` que te pinte el error pintame un div con el error.message ` <div className="loginPage-error" onClick={resetError}>` . Es decir que si se produce un error lo capturas, haces un set y como el componete renderiza de nuevo y luego debería pintar un pastillata con el mensaje de rror
+
+```js
+function LoginPage() {
+  // const { onLogin } = useAuth();
+  // const [credentials, setCredentials] = useState({username: '',password: '',});
+
+  const [error, setError] = useState(null); //  creamos un **estado**
+
+  // const [isFetching, setIsFeching] = useState(false);
+  // const location = useLocation();
+  // const navigate = useNavigate();
+
+  // const handleSubmit = async event => {
+  //   event.preventDefault();
+
+  //   try {
+  //     setIsFeching(true);
+  //     await login(credentials);
+  //     setIsFeching(false);
+  //     onLogin();
+  //     const to = location?.state?.from?.pathname || '/';
+  //     navigate(to);
+    } catch (error) {
+      setIsFeching(false);
+      setError(error); // almacenas el error
+    }
+  };
+
+    return (
+    // <div className="loginPage">
+    //   <h1 className="loginPage-title">Log in to Twitter</h1>
+    //   <form onSubmit={handleSubmit}>
+    //     <FormField type="text" name="username" label="phone, email or username" className="loginForm-field"
+    //       onChange={handleChange}
+    //       value={credentials.username}
+    //     />
+    //     <FormField type="text" name="username" label="phone, email or username" className="loginForm-field"
+    //       onChange={handleChange}
+    //       value={credentials.password}
+    //     />
+    //     <FormField type="text" name="username" label="phone, email or username" className="loginForm-field"
+    //     >
+    //       {isFetching ? 'Connecting...' : 'Log in'}
+    //     </Button>
+        {error && (
+          <div className="loginPage-error">
+            {error.message}
+          </div>
+        )}
+  //     </form>
+  //   </div>
+  // );
+}
+
+export default LoginPage;
+```
+
+el error viende desde el servidor en `message` y tu lo capturas. Como en `client.js` en el interceptror estás haciendo un `...error.response.data`
+
+```js
+client.interceptors.response.use(
+  response => response.data,
+  error => {
+    if (error.response) {
+      console.log(error.response);
+      // 400/500 server error
+      return Promise.reject({
+        message: error.response.statusText,
+        ...error.response,
+        ...error.response.data,
+      });
+    }
+    // Request error
+    return Promise.reject({ message: error.message });
+  },
+);
+```
+
+este data tiene un message y por eso sustituye con el mensaje del servidor, si no se que das con el mensaje del  `.statusText,`. En los mensajes si quieres decir `Wrong username/password` ok, pero no por separado porque das datos al hacker.
+
+Fíjate que podemos decir que cuando haya un error se resetee a null
+
+```js
+  const resetError = () => {
+    setError(null);
+  };  
+```
+
+y se lo pasamos el return
+
+```js
+        {error && (
+          <div className="loginPage-error" onClick={resetError}>
+            {error.message}
+          </div>
+        )}
+```
+
+así cuando el susario se equivoca lo devuelve de nuevo reseteado.
+
+**control : mientras resuelveuna llamada que no pueda hacer otra**
+
+¿como lo hacemos? en React siempre es **estado**, **estado**, **estado**... ¿quiero saber si hay una llamada justo en ese instante que se hace click en el botón... **estado**? Igual que me he creado un estado de erro, me puedo crear un estado de  `const [isFetching, setIsFeching] = useState(false);` por defecto false de inicio, no estoy haciendo feching
+
+```js
+function LoginPage() {
+  // const { onLogin } = useAuth();
+  // const [credentials, setCredentials] = useState({username: '',password: '',});
+  // const [error, setError] = useState(null);
+  const [isFetching, setIsFeching] = useState(false);
+
+  ...
+
+  const handleSubmit = async event => {
+    // event.preventDefault();
+
+    try {
+      setIsFeching(true);
+      // await login(credentials);
+      setIsFeching(false);
+      // onLogin();
+      // const to = location?.state?.from?.pathname || '/';
+      // navigate(to);
+    } catch (error) {
+      setIsFeching(false);
+      // setError(error);
+    }
+  };
+
+```
+
+cuando estes haciend la llamada hasta que no se resuelve no cambiamo feching a true, esto sirva para decir si estoy haciendo feching en lugar de devolver toda la página ... al menos poder desabilitar el boton de login, pero podría hacer más cosas. cmo ya tengo un `buttonDisable` para cuando no hay usuario y password lo aprovecho y le digo eso o cuando estoy en feching
+
+```js
+  const buttonDisabled = !(username && password) || isFetching;
+
+  // return (
+  //   <div className="loginPage">
+  //     <h1 className="loginPage-title">Log in to Twitter</h1>
+  //     <form onSubmit={handleSubmit}>
+  //       <FormField
+  //         type="text"
+  //         name="username"
+  //         label="phone, email or username"
+  //         className="loginForm-field"
+  //         onChange={handleChange}
+  //         value={credentials.username}
+  //       />
+  //       <FormField
+  //         type="password"
+  //         name="password"
+  //         label="password"
+  //         className="loginForm-field"
+  //         onChange={handleChange}
+  //         value={credentials.password}
+  //       />
+  //       <Button
+  //         type="submit"
+  //         $variant="primary"
+  //         disabled={buttonDisabled}
+  //         className="loginForm-submit"
+  //       >
+          {isFetching ? 'Connecting...' : 'Log in'}
+//         </Button>
+//         {error && (
+//           <div className="loginPage-error" onClick={resetError}>
+//             {error.message}
+//           </div>
+//         )}
+//       </form>
+//     </div>
+//   );
+// }
+
+
+
+``` 
+
+De esta forma cambias el texto dentro del boton y capas el botón mientras controlas el estado: si `{isFetching ? 'Connecting...' : 'Log in'}` estas `isFetching` me muestras `Log in` y si no `'Connecting...'`. Cambias el texto del boton mientras estás haciendo login y te aseguras que el oton está desabiliatdo.... no puede cortar hasta que no acabe la peticion.
+
+Podrías hacer controlar más errores para el listado, qué ocurre para cuando el api diga que no existe un tweet o cuando intentes crear un tweet y te devuelve un 401
+
+Si queremos manejar el erro cuando estñas en la vista de crear el tweet, tiene que ir a esa vista "What are you thinking?" de creación de tweet que tiene su propio componente `newTweetPage.js`.
+* Queremos, a medida que el usuario va escribiendo, queremos decirle cuantos caracteres le quedan hasya agotar los 250 de máximo. 
+* Mientras desabilitaos el boton de enviar 
+* intentar que no pueda meter más de 250 caracteres
+* luego llamaremos al servidor y redirijir al usuario a la pagina del detalle y
+
+Vamos a `service.js` 
+
+```js
+import client from '../../api/client';
+
+const tweetsUrl = "/api/tweets";
+
+// export const getLatestTweets = () => {
+//   cons url = `${tweetsUrl}?_expand=user&_embed=likes&sort=updateA`
+//   return client.get(url);
+// }
+
+export const createTweet = tweet => {
+  const url = tweetsUrl
+  return client.post(url, tweet); // hace una solicitud POST a la URL especificada en la variable url.
+}
+```
+
+vamos a `NewTweetPage.js` y dentro del compnente necesitaoms un estado para ir almacenando lo que el usuario vaya almacennado 
+
+
+```js
+function NewTweetPage() {
+  const [content, setContent] = useState('');
+```
+
+en el componente `<Textarea/>` del return de `<NewTweetPage>` tenemos que cualquier `...prop` que le pases terminará dentro del `Textarea`
+
+```js
+const Textarea = ({ className, ...props }) => {
+  return (
+    <div className={clsx('textarea', className)}>
+      <textarea className="textarea-input" {...props} />
+    </div>
+  );
+};
+```
+
+es decir dentro del componente `<Textarea/>` del return de `<NewTweetPage>` le podemos pasar 
+
+```js
+          <form onSubmit={handleSubmit}>
+            <Textarea
+              className="newTweetPage-textarea"
+              placeholder="Hey! What's up!"
+              value={content}
+              onChange={handleChange} // me creo este evento dentro de la funcion y se la paso a onChange
+```
+
+esto lo que hace es que mientras cambia el text area irá cambiadno el "State" de este componenet. lo puede ir viendo con la extensión react de google.
+
+Me creo un par de variable 
+
+```js
+const MIN_CHARACTERS = 5;
+const MAX_CHARACTERS = 140;
+
+function NewTweetPage() {
+  const [content, setContent] = useState('');
+  // const [isFetching, setIsFetching] = useState(false);
+  // const navigate = useNavigate();
+
+  const handleChange = event => {
+    setContent(event.target.value);
+  };
+
+  // const handleSubmit = async event => {
+  //   event.preventDefault();
+  //   try {
+  //     setIsFetching(true);
+  //     const tweet = await createTweet({ content });
+  //     navigate(`../${tweet.id}`, { relative: 'path' });
+  //   } catch (error) {
+  //     if (error.status === 401) {
+  //       navigate('/login');
+  //     } else {
+  //       setIsFetching(false);
+  //       // Show error
+  //     }
+  //   }
+  // };
+
+  const characters = `${content.length} / ${MAX_CHARACTERS}`; // ${content.length} informa de cuantos van quedadno
+  // const buttonDisabled = content.length <= MIN_CHARACTERS || isFetching;
+
+  return (
+    // <Content title="What are you thinking?">
+    //   <div className="newTweetPage">
+    //     <div className="left">
+    //       <Photo />
+    //     </div>
+    //     <div className="right">
+    //       <form onSubmit={handleSubmit}>
+            <Textarea
+              className="newTweetPage-textarea"
+              placeholder="Hey! What's up!"
+              value={content}
+              onChange={handleChange}
+              maxLength={MAX_CHARACTERS} // le dices el maximo de caracteries
+  //           />
+  //           <div className="newTweetPage-footer">
+  //             <span className="newTweetPage-characters">{characters}</span>
+  //             <Button
+  //               type="submit"
+  //               className="newTweetPage-submit"
+  //               $variant="primary"
+  //               disabled={buttonDisabled}
+  //             >
+  //               Let's go!
+  //             </Button>
+  //           </div>
+  //         </form>
+  //       </div>
+  //     </div>
+  //   </Content>
+  // );
+// }
+
+// export default NewTweetPage;
+
+```
+**Regla min caracteres**
+UN a regla que me dice que no se habilite le boton hasta que no se hayan ecrito 5 caracteres. 
+`const buttonDisabled = content.length <= MIN_CHARACTERS || isFetching;`
+
+```js
+// 
+//   const characters = `${content.length} / ${MAX_CHARACTERS}`;
+  const buttonDisabled = content.length <= MIN_CHARACTERS || isFetching;
+
+  return (
+    // <Content title="What are you thinking?">
+    //   <div className="newTweetPage">
+    //     <div className="left">
+    //       <Photo />
+    //     </div>
+    //     <div className="right">
+    //       <form onSubmit={handleSubmit}>
+            // <Textarea
+            //   className="newTweetPage-textarea"
+            //   placeholder="Hey! What's up!"
+            //   value={content}
+            //   onChange={handleChange}
+            //   maxLength={MAX_CHARACTERS}
+            // />
+            // <div className="newTweetPage-footer">
+            //   <span className="newTweetPage-characters">{characters}</span>
+              <Button
+                type="submit"
+                className="newTweetPage-submit"
+                $variant="primary"
+                disabled={buttonDisabled}
+              >
+                Let's go!
+              </Button>
+    //         </div>
+    //       </form>
+    //     </div>
+    //   </div>
+    // </Content>
+  // );
+```
+
+Ahora queda hacer el `submit` que lo tenemos en el formulario
+
+```js
+
+  const handleSubmit = async event => {
+    event.preventDefault();
+    try {
+      setIsFetching(true);
+      const tweet = await createTweet({ content });
+      navigate(`../${tweet.id}`, { relative: 'path' }); // le paso ruta relativa
+    } catch (error) {
+      if (error.status === 401) {
+        navigate('/login');
+      } else {
+        setIsFetching(false);
+        // Show error
+      }
+    }
+  };
+
+  // const characters = `${content.length} / ${MAX_CHARACTERS}`;
+  const buttonDisabled = content.length <= MIN_CHARACTERS || isFetching;
+
+  return (
+    // <Content title="What are you thinking?">
+    //   <div className="newTweetPage">
+    //     <div className="left">
+    //       <Photo />
+    //     </div>
+    //     <div className="right">
+          <form onSubmit={handleSubmit}>
+            <Textarea
+  //             className="newTweetPage-textarea"
+  //             placeholder="Hey! What's up!"
+  //             value={content}
+  //             onChange={handleChange}
+  //             maxLength={MAX_CHARACTERS}
+  //           />
+  //           <div className="newTweetPage-footer">
+  //             <span className="newTweetPage-characters">{characters}</span>
+  //             <Button
+  //               type="submit"
+  //               className="newTweetPage-submit"
+  //               $variant="primary"
+  //               disabled={buttonDisabled}
+  //             >
+  //               Let's go!
+  //             </Button>
+  //           </div>
+  //         </form>
+  //       </div>
+  //     </div>
+  //   </Content>
+  // );
+}
+```
+
+Vamos ahcer el detalle. Enla práctica el endPoint te puede devolver un 401, o sea que cambiará sobre este ejemplo.
+
+vamos a `service.js`
+
+```js
+// import client from '../../api/client';
+
+// const tweetsUrl = "/api/tweets";
+
+// export const getLatestTweets = () => {
+//   cons url = `${tweetsUrl}?_expand=user&_embed=likes&sort=updateA`
+//   return client.get(url);
+// }
+
+// export const createTweet = tweet => {
+//   const url = tweetsUrl
+//   return client.post(url, tweet); // hace una solicitud POST a la URL especificada en la variable url.
+// }
+
+// para verun tweet
+export const getTweet = (tweetId) => {
+  const url = `${tweetsUrl}/${tweetId}`;
+  return client.get(url);
+}
+```
+
+ya con esto tenemos el `metodo de servicio` para obtener un tweet pasándole el id 
+
+Vamos a `TweetPage.js`. Tenemos el id de la url a través de  `const params = useParams();`. 
+Cuanod queremos hacer una llamada a un api desde un componente en el momento de la carga lo hacemos a través de `useEffect()` que tendrá unas dependencias.
+
+El resultado de la llamada al servicio delo voy a almacenar con un `const [tweet, setTweet] = useState(null);` ; lepodrías definir también un dispeching o un inloginpero no lo haremos, tenlo en cuenta para la practica.
+
+A la hora de pintar, si hay un tweet que me pinte `{tweet && (<div><code>{JSON.stringify(tweet)}</code></div>)}`
+
+```js
+function TweetPage() {
+  const params = useParams();
+  // const navigate = useNavigate();
+  const [tweet, setTweet] = useState(null);
+
+  useEffect(() => {
+    getTweet(params.tweetId) // llamo al metodo del servicio
+      .then(tweet => setTweet(tweet)) // lo paso para que renderice
+      .catch(error => { // si hay error
+        if (error.status === 404) {
+          navigate('/404');
+        }
+      });
+  }, [navigate, params.tweetId]); // debes incluir las dependencias porque dependen de estas funciones de dentro
+  // esto te lo pide por si fflla, aunque quieras solo la primera iteracion
+
+  // return (
+  //   <Content title="Tweet detail">
+  //     <div>
+        Tweet detail {params.tweetId} goes here...
+        {tweet && (
+          <div>
+            <code>{JSON.stringify(tweet)}</code>
+          </div>
+        )}
+//       </div>
+//     </Content>
+//   );
+// }
+
+// export default TweetPage;
+
+```
+
+si te vas al navegador `localhost:3000/tweets/4` le pides al servidor el tweet y puedes ver que puedes sacar el detalle. Si pides uno que no existe y te da error `message: notfound` es que no tienes el status, por eso en client hemos puesto
+
+```js
+      // return Promise.reject({
+      //   message: error.response.statusText,
+        ...error.response, // de esta forma tendrás un status 404
+        // ...error.response.data,
+```
+
+si el usuario teclea cualquier navegacin que no existe lo derivamos al 404
