@@ -3860,3 +3860,93 @@ si te vas al navegador `localhost:3000/tweets/4` le pides al servidor el tweet y
 ```
 
 si el usuario teclea cualquier navegacin que no existe lo derivamos al 404
+
+
+### prop types - asegurar que los componentes se utilizan con los tipos esperados
+
+Actualmente casi es estandar trabajar con TypeScrip TS ; pero hasta ahora JS tenía la librería **react prop types** https://legacy.reactjs.org/docs/typechecking-with-proptypes.html
+Esta paquete compruera que los tipos que pasamos en los componentes son las que esperamos. React recomienda TS https://react.dev/reference/react/Component#static-proptypes
+
+Vamos a formar utilizar el paquete `prop-types`
+
+```sh
+npm i prop-types
+```
+vamos a buscar componentes que tengan `props` cada componente es una función
+
+`const LikeButton = ({ likes, isLike, onLike }) => {` esta define la propiedad `likes` que devería ser un numero , recibe un `dislike` como booleano y `onLIke` que es una función 
+
+```js
+const LikeButton = ({ likes, isLike, onLike }) => {
+  const Icon = isLike ? IconLiked : IconNotLiked;
+
+  return (
+    <div
+      className={clsx('likeButton', {
+        'likeButton--active': isLike,
+      })}
+      onClick={event => {
+        event.preventDefault();
+        onLike(event);
+      }}
+    >
+      <span className="likeButton-icon">
+        <Icon width="20" height="20" />
+      </span>
+      <span className="likeButton-label">{likes}</span>
+    </div>
+  );
+};
+```
+si allá donde utilicemos el componente, yo no le paso la función... nos dará error porque cuando ejecutes el click del botón intentará usar una función que no se le ha pasado
+
+```js
+  <LikeButton
+    //onLike={event => console.log(event)} <-- error si no pasas la función
+    likes={likes.length}
+  />
+```
+
+pero en tiempo de escritura no tienes quejas de React, no tienes el feedback que TS si que te da. Solo tenemos un paquete `prop-types` de ayuda que chekea en tiempo de ejecución comprovando sobre todas las propiedades que hayas declarado en el componente.
+
+
+Con React permite definir una propiedad estática para cada función/ componente; En JS las funciones son objetos y como objeto puedo crea cualquier atributo. Pues React va a mirar el atributo `prop-types` de la funcion/componente. Y lo que tienes es que pasar los atributos del componente.
+
+```js
+import PropTypes from 'prop-types';
+
+const LikeButton = ({ likes, isLike, onLike }) => {
+...
+};
+...
+// declaras los tipos del componente
+LikeButton.propTypes = {
+  likes: PropTypes.number.isRequired,
+  isLike: PropTypes.bool, // esta no es requerida 
+  onLike: PropTypes.func.isRequired,
+};
+```
+
+Por cada componente puedes declara viene a establecer que valores quiero por defecto para una propiedad cuando no me la pasan , en esta caso `isLike: PropTypes.bool,`
+
+```JS
+LikeButton.defaultProps = {
+  isLike: false,
+};
+```
+también podrías hacer esto  `const LikeButton = ({ likes, isLike=false, onLike }) => {`
+
+Ahora tendrás error si lepasas o que no es : `react-jsx-dev-runtime.development.js:87 Warning: Failed prop type: Invalid prop `onLike` of type `number` supplied to `LikeButton`, expected `function`.`
+
+```js
+  <LikeButton
+    onLike={5} <-- error si no pasas la función
+    likes={likes.length}
+  />
+```
+
+`prop-types` no sabe que va a fallar, pero sabe que usas una propiedad mal, te advierte en tiempo de desarrollo, no lo pases si no está bien a modo producción! 
+Lo ideal es `TS` y que te olvides de esto, pero es una herramienta muy util para `JS`.
+
+
+
