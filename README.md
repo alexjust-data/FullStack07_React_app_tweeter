@@ -3948,5 +3948,129 @@ Ahora tendrás error si lepasas o que no es : `react-jsx-dev-runtime.development
 `prop-types` no sabe que va a fallar, pero sabe que usas una propiedad mal, te advierte en tiempo de desarrollo, no lo pases si no está bien a modo producción! 
 Lo ideal es `TS` y que te olvides de esto, pero es una herramienta muy util para `JS`.
 
+https://www.npmjs.com/package/eslint-plugin-react es un pligun que te avisa si no has puesto `propTypes` es un buen primer paso para asegurarte q como desarrollador estás aplicando proptypes. En tu configuracion json puedes añadirle y forzar sta regla
+
+```json
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "rules": {
+    "react/prop-types": "error"
+  }
+```
+
+esto te avisará en cada componente hasta que las declares importante `proptypes` en cada componente y atributo.
+
+### Refs
+
+Las "Refs" en React son una característica que permite acceder a los nodos del DOM (componentes) de forma directa. En un entorno de React, normalmente se manipula el DOM de manera indirecta a través del estado y las propiedades (props). Sin embargo, hay situaciones en las que necesitas una forma de interactuar directamente con un elemento del DOM, y aquí es donde entran las Refs.
+
+Por ejemplo, podrías querer enfocar un campo de texto automáticamente cuando se carga un componente, o necesitar las dimensiones exactas de un elemento para ciertos cálculos. Las Refs hacen esto posible.
 
 
+Imaginate que en `NewTweets` quieres un contador para saber cuántas veces ese componente es renderizado. ¿que tipo de datos ncesitaríamos para almcenar dentro de ese componete un valor que nos diga cuantas veces se ha renderiado? una prop no sería porque nos la pasa desde fuera.
+
+```js
+function NewTweetPage() {
+  const [content, setContent] = useState('');
+  const [isFetching, setIsFetching] = useState(false);
+  const navigate = useNavigate();
+  const [counter , setCounter] = useState(0);
+
+ 
+  useEffect(())=> {
+    setCounter(c = c + 1);
+  }
+
+  ...
+```
+
+Has de tener claro que siempre que se ejecute un `useState` siempre se ejecutará de nuevo la función `NewTweetPage` se renderizará cada  vez. Cuando yo llamo una funcion `setCounter` (setCounter) de un estado (useState) y se actualiza,  ese compoinente se renderia de nuevo. Siempre que llames a un `set__(algo)__` eso fuera a un render. 
+
+
+**Refs**
+
+Es la diferencia básica entre el Estado y una **Refs** es que yo una **Refs** la puedo cambiar sin problema de que me vaya a provocar un nuevo rendimiento de del componente.
+
+A veces has de almacenar dentro del componete cierte infromación.
+
+Tbn tienen otros usos. 
+
+Yo a través del `return` que es JSX declaro o decido como va a ser mi DOM, mi vistas, sin necesidad hasta ahora de acceder al elemento real del DOM para hacer ninguna operacion.
+Si en algún momento te ves en la necesidad de tener que acceder a un elemento del `dom` por codigo en React tiene una herramienta para eso, nunca un get.element() nosotros usaremos una ref.
+
+
+Imagina que quieres una ref de este formulario
+
+```js
+const formRef = useRef(null); // lo llamo porque quiero así formRef
+
+return (
+  <Content title="What are you thinking?">
+    <div className="newTweetPage">
+      <div className="left">
+        <Photo />
+      </div>
+      <div className="right">
+        <form onSubmit={handleSubmit}>  <----------- este
+          <Textarea
+            className="newTweetPage-textarea"
+            placeholder="Hey! What's up!"
+            value={content}
+            onChange={handleChange}
+            maxLength={MAX_CHARACTERS}
+          />
+```
+
+si se lo pasas al `<form onSubmit={handleSubmit} ref={formRef}>`
+
+lo que hará react cuando este elemento lo monte en el DOM metrá dentro del `ref` el elemento propiamente dicho `form` y yo tendré a mi disposición ese elemento por si lo necesito llamar para hacer un lo que sea
+
+la manera de react para acceder al elemento propiamente dicho es mediante una ref. Ejemplos:
+
+**Enfoque Automático en un Campo de Texto**: Puedes usar una Ref para enfocar automáticamente un campo de texto cuando se carga un componente. Esto es útil en formularios o cuadros de búsqueda.
+**Manejo de Animaciones o Transiciones**: Las Refs son útiles para manipular directamente elementos del DOM para animaciones o transiciones, especialmente si estás usando una librería de animación que requiere referencias directas a los elementos del DOM.
+**Integración con Librerías de Terceros**: Las Refs son útiles para integrar con librerías de terceros que interactúan directamente con el DOM, como jQuery, D3.js, etc.
+**Medir Dimensiones de Elementos**: Puedes usar Refs para medir las dimensiones de un elemento, lo cual puede ser necesario para ciertos cálculos de diseño o para respuestas dinámicas a cambios en el tamaño.
+**etc**
+
+Recuerda que el uso de Refs debe ser moderado y solo cuando sea realmente necesario, ya que el abuso de estas puede llevar a prácticas que rompen con el flujo de datos "top-down" de React.
+
+Además puedes pasar al DOM `<form>` pero no a los componenets `<Button>`
+
+video FundamentosReact5 1h25'
+
+
+### Performance
+
+Lo primero es tener claro, cuándo renderiza un componente (que el codigo de un comonente lafuncion se jecuta y develve un nuevo elemento Reatc) entonces cada vez que haya un cambio de estado o más arriba de este componente haya un cambio de estado o bien haya cambio de un contexto que haya ejecuatado, el componete se va a ejecutar, se va a renderizar de nuevo, va a crear un nuevo elelemtno de react. 
+
+Los elelemtnos react ya vimso que son objetos tienen las Props y son objetos muy, muy ligeros y no es un problema recrearlos en cada red para no es un problema recrearlos en cada red, y tampoco es un problema para abrir después hacer el ajuste entre lo que tienes en el virtual don y el virtual y el don real.
+
+Qué pasa que a veces sí que podemos meternos otros componentes que les cuesten analizar por defecto los que hemos visto, no pero a veces sí que vamos a meter componentes, que sean más pesados de renderizar vamos a aportar esa situación un poco a veces de un componente renderizar un componente que pueda ser un momentodado pesado de renderizar ¿Qué significa pesado renderizar, Pues básicamente es que cuando estoy ejecutando el código de esa función, pueda haber retardo.
+
+porque tenga un cálculo complejo, internamente pues eso es un problema por eso es un problema y puede hacer que mi que mi navegador incluso llegue a colgarse recordad queJavascript es un hído. Solo tengo un hilo en el navegador. Es mientras estoy haciendo una cosa, no puedo estar haciendo otra, aunque el javascript dé la sensación de que a través de la sincronía pueda manejar distintas cosas a la vez es falso sabes, que solo puede manejar una cosa a un tiempo mientras se está ejecutando una línea de congo no se está ejecutando otra enparalelo Web Workers a parte.
+
+En React, "Performance" se refiere generalmente a cómo de eficientemente una aplicación hecha en React rinde en términos de velocidad y uso de recursos. Dado que React es una biblioteca para construir interfaces de usuario, su rendimiento está estrechamente ligado a cuán rápidas y responsivas se sienten estas interfaces para el usuario final. 
+
+Si el cambio de estado está en el padre de todo, rendizará todo el arbol. Si está localizado rendizará poca cosa. 
+
+Se mantiene una especie e memorizacion, caché para que todo esto no suceda.
+
+**MEMO**
+
+En el contexto de React, React.memo es una función de orden superior que sirve para optimizar el rendimiento de componentes funcionales. Lo que hace React.memo es memorizar (o "recordar") el resultado del renderizado de un componente para evitar renderizados innecesarios.
+
+Cuando envuelves un componente con React.memo, React realizará una comparación superficial de las props anteriores y las nuevas en cada renderizado. Si las props no han cambiado, React reutilizará el último resultado renderizado, evitando así un renderizado innecesario del componente.
+
+Aquí hay un ejemplo básico de cómo se utiliza React.memo:
+
+```JS
+const MyComponent = React.memo(function MyComponent(props) {
+  // Tu componente aquí
+});
+
+```
