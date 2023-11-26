@@ -10,7 +10,9 @@ import RequireAuth from './pages/auth/components/RequireAuth';
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route 
+        path="/login" 
+        element={<LoginPage count={5}/>} />
       <Route path="/tweets" element={<Layout />}>
         <Route index element={<TweetsPage />} />
         <Route path=":tweetId" element={<TweetPage />} />

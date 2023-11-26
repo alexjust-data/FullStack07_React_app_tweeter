@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useEffect, useState, useRef } from 'react';
 import Button from '../../../components/shared/Button';
 import FormField from '../../../components/shared/FormField';
 import { login } from '../service';
 import { useAuth } from '../context';
+import copyStyles from '../../../utils/copyStyles';
 
 import './LoginPage.css';
 import { useLocation, useNavigate } from 'react-router';
-import { createPortal } from 'react-dom';
 
 function LoginPage() {
   const { onLogin } = useAuth();
@@ -87,8 +88,18 @@ function LoginPage() {
   );
 }
 
-function LoginPagePortal (){
-  return createPortal(<LoginPage />, document.getElementById('portal'))
+function LoginPagePortal ({count}){
+  const portalContainer = useRef(document.createElement('div'));
+
+  useEffect(() => {
+    const externalWindow = window.open(
+      '', '', 'width=600, heigth=400, left=200, top=200'
+      );
+    copyStyles(document, externalWindow.document);
+    externalWindow.document.body.appendChild(portalContainer.current);
+  });
+
+  return createPortal(<LoginPage count={count}/>, portalContainer.current);
 }
 
 export default LoginPagePortal;
