@@ -4062,6 +4062,8 @@ Se mantiene una especie e memorizacion, caché para que todo esto no suceda.
 
 **MEMO**
 
+2:42' FundamentosReact5
+
 En el contexto de React, React.memo es una función de orden superior que sirve para optimizar el rendimiento de componentes funcionales. Lo que hace React.memo es memorizar (o "recordar") el resultado del renderizado de un componente para evitar renderizados innecesarios.
 
 Cuando envuelves un componente con React.memo, React realizará una comparación superficial de las props anteriores y las nuevas en cada renderizado. Si las props no han cambiado, React reutilizará el último resultado renderizado, evitando así un renderizado innecesario del componente.
@@ -4074,3 +4076,239 @@ const MyComponent = React.memo(function MyComponent(props) {
 });
 
 ```
+
+### Lazy loading y code splitting
+
+lazy permite retrasar la carga del código de un componente hasta que es realmente necesario
+Cuando cargamos un componente con lazy el código del componente (src_MyButton_js.chunk.js) es separado del bundle principal (bundle.js)
+
+Con Suspense podemos definir una interfaz alternativa que será presentada mientras descarga el código del componente (loader, spinner...)
+
+```js
+import { Suspense, lazy } from 'react';
+const MyButton = lazy(() => import('./MyButton'));
+```
+
+`() => import('./MyButton')` esto le está diciendo que este componente lo cargará a parte, sólo cuando lo necesitemos. Estamos introduciendo un retardo, reac nos pide que esa carga la tenemos que envolver en un componete suspense. e decir cuando se den las conticiones para que al usuario se pida el codigo de mybutton y como en ese momento justo mi app no puede dar ese codigo porque lo tengo que descargar del servidor, pues mientras se produce esta descarga , lo que le estaremos mostrando será ese elemento que le hemos pasado como caalback `fallback={<div>Loading...</div>}>` al suspense
+
+```js
+export default function App() {
+ return (
+    <Suspense fallback={<div>Loading...</div>}> 
+      <MyButton>Click me</MyButton>
+    </Suspense> );
+}
+```
+
+es como una manera declarativo de mosar algo mientras estás descargando el codigo de myButton y cuando se descargue se muestra el compnente.
+
+Vamos hacerlo para el `login` de nuestra `App.js` aplicación `import LoginPage from './pages/auth/LoginPage';` lo que haremos será importarlo  modo lasy
+
+```js
+import { Suspense, lazy } from 'react';
+
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+```
+
+ya tienes el componente cargado modo `lazy` pero para que lo haga bien hay que meter el elemento `login` en un suspense
+
+```js
+      <Route
+        path="/login"
+        element={
+          <Suspense fallback={<div>Loading...</div>}>
+            <LoginPage />
+          </Suspense>
+        }
+      />
+```
+
+de esta forma podrás mostrar algo `Loading...` mientars se descarga el componente.  la proxima vez ya no mostrará nada porque ya estaré descargado. Todo lo que haya dentro del suspense aunque pongas un div con informacion no se mostrará, solo el fallback
+
+https://blog.openreplay.com/data-fetching-with-suspense-in-react/
+
+
+### error boundary
+
+https://legacy.reactjs.org/docs/error-boundaries.html
+
+
+https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary
+
+
+Para usar error boundary hay que usar clases
+
+La idea de error Bondary es tener un proviene de error de captura de errores muy arriba o tantos como necesitemos de manera que si se produce algún error no esperado en algún render en mi árbol de react este error bondary que está situado en lo másalto de mi aplicación. Me capture el error y yo le pueda, mostra un mensaje de error al usuario determinada, es un poco la idea esto es para capturar errores de render vale o sea errores del api yo los control si yo quiero un error que 401 y hago lo que sea el 404 elcontrol, pero hay veces que se pueden producir errores no esperados. ¿Vale? Y cómo se manejan todos esos errores no esperados. Es decir si en algún momento, en algún render ejecutando la funcion de algún componente, pero lo que es el render hay un error, lo puedo capturar en boundary y a partir de ahí trabajar con el erro, es una especie de try cath, pero noceitamos algun metodo de clico de vida asicado a la clase react componente y que v a asaltar un compnete cuando hay cualquier eror debajo de el.
+
+Vamos a ver como se crea un compnetede tipo clase y ver como trabaja boundery.
+
+Yo tengo un componente `App` pues por encima de el, en el incluso en el `index` voy a meter un error boundary para que si se poduce algun error de render en todo el arbol de la plicacion pueda capturarlo.
+
+creo carpeta en `compontents/error/ErrorBoundary.js` creo el componente con clase en react
+
+
+una clase que extienda de `React.Componente` es un componente de React `class ErrorBoundary extends React.Component {}`
+
+podemos crear componentes con funciones pues también podemos crear componentes para clases pero nadie lo hace salvo para esto
+```js
+import React from 'react';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {// constructor, que recibe datos,
+    super(props);     // componente trabaja dos datos, props y stado, desde fuera recibe props
+    this.state = {    // creo estado en componente tipo clase, es como use.state de las funciones
+      error: null,
+      info: null,
+    };
+  }
+
+  componentDidCatch(error, info) { // se ejecuta cuando hay errro dentro del componente ErrorBoundary 
+    this.setState({ error, info }); // captura cambio de estado, para hacer un render nuevo del componete
+  }
+
+  render() { // siempre ha de tener un metodo render que devuelve el JSx
+    const { error, info } = this.state;
+
+    if (error) {
+      return (  // todo esto es lo que devuelve
+        <div>
+          <h1>Ooops! There was an error</h1>
+          <div>
+            <code>{error.message}</code>
+          </div>
+          <div>
+            <code>{JSON.stringify(info)}</code>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children; // si no error, muestro lo que metes en Brapel
+  }
+}
+
+export default ErrorBoundary;
+```
+
+¿de qué errores queremos estar pendientes en `index`? al nivel que quiera
+
+```js
+root.render(
+  <React.StrictMode>
+    <ErrorBoundary> <----- aqui por ejemplo
+      <BrowserRouter>
+        <AuthContextProvider initiallyLogged={!!accessToken}>
+          <App />
+        </AuthContextProvider>
+      </BrowserRouter>
+    </ErrorBoundary> <----- aqui por ejemplo
+  </React.StrictMode>,
+);
+```
+siempre saltará el componente `componentDidCatch(error, info) ` de la clase `ErrorBoundary`
+
+https://reactrouter.com/en/main/route/error-element
+
+
+https://nextjs.org/docs/pages/building-your-application/configuring/error-handling
+
+
+https://remix.run/docs/en/main/guides/errors
+
+
+### portals
+
+para migraciones grandes que sirven desde el servidor co jsp o cosas complejas que quiero meter desde determindas partes de html que quiero meter componentes de react ; pues a través de los poratls yo puedo ser selectivo y ver donde quiero meter el html generado por React
+
+https://react.dev/reference/react-dom/createPortal
+
+un portal es un compnente que en lugar de renderizarse donde lo toca se renderiza en cualquier parte del dom que yo quiera.
+
+Si vamos a la pagina login podemos ver desde el punto de vista de react como está formada su genealogía
+
+```sh
+BrowserRouter
+└── Router
+    └── Navigation.Provider
+        └── Location.Provider
+            └── AuthContextProvider
+                └── Context.Provider
+                    └── App
+                        └── Routes
+                            └── RenderedRoute
+                                └── Route.Provider
+                                    └── LoginPage
+                                        ├── FormField
+                                        ├── FormField
+                                        └── styled.button
+```
+
+desde el punto de vista del DOM va en paralelo dentro del body
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ... your head contents ... -->
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root">
+    <div class="loginPage">
+      <!-- ... your login page contents ... -->
+    </div>
+```
+
+a través de lo sportals yo le puede decir que este ` <div class="loginPage">` se renderice en otra parte fuera del que sería su sitio natural, pero con una salvedad, que desde el punto de vista de react siempre será hijo de `App` porqie lo hemos definido así:
+
+```js
+function App() {
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <Suspense fallback={<div>Loading...</div>}>
+            <LoginPage />
+          </Suspense>
+        }
+      />
+```
+
+pero lo vamos a colorar fuera a nuvel de html incluso dentro de ota ventana, en modo flotante en otra ventana.
+
+Hay una funcion que es `createPortal` que premite renderizar un determinado elemento react pero en una parte diferente del DOM. https://react.dev/reference/react-dom/createPortal
+
+me creo en `index.html`dos con diferenetes nombre para ver las diferencias
+
+```html
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <div id="portal"></div>
+```
+
+ahora mismo todo cualqga en mi app dentro del 
+
+```html
+  <div id="root">
+    <div class="loginPage">
+      <!-- ... your login page contents ... -->
+    </div>
+```
+
+porque nosotros ahora mismo cuando renderizamos le estamos diceiendoq ue lo meta en `getElementById('root')`
+
+```js
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthContextProvider initiallyLogged={!!accessToken}>
+        <App />
+      </AuthContextProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
+);
+```
+
+pero lo vamos a sacar y lo metemos en `<div id="portal"></div>` para es vamos atransofrmar ligerament e ``loginPage.js

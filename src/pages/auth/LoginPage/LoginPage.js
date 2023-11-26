@@ -6,6 +6,7 @@ import { useAuth } from '../context';
 
 import './LoginPage.css';
 import { useLocation, useNavigate } from 'react-router';
+import { createPortal } from 'react-dom';
 
 function LoginPage() {
   const { onLogin } = useAuth();
@@ -86,4 +87,8 @@ function LoginPage() {
   );
 }
 
-export default LoginPage;
+function LoginPagePortal (){
+  return createPortal(<LoginPage />, document.getElementById('portal'))
+}
+
+export default LoginPagePortal;
