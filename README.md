@@ -4311,4 +4311,265 @@ root.render(
 );
 ```
 
-pero lo vamos a sacar y lo metemos en `<div id="portal"></div>` para es vamos atransofrmar ligerament e ``loginPage.js
+pero lo vamos a sacar y lo metemos en `<div id="portal"></div>` para es vamos atransofrmar ligerament e `loginPage.js`
+
+entonces creamos una funcion `LoginPagePortal ` que devuelva `createPortal(<LoginPage />` del componente <LoginPage /> pero en lugar de que vaya en su sitio que vaya en `document.getElementById('portal')` y exportamo export default `LoginPagePortal`;
+
+create portal no es de react es de react dom `import { createPortal } from 'react-dom';`
+
+```js
+// import { useState } from 'react';
+// import Button from '../../../components/shared/Button';
+// import FormField from '../../../components/shared/FormField';
+// import { login } from '../service';
+// import { useAuth } from '../context';
+
+// import './LoginPage.css';
+// import { useLocation, useNavigate } from 'react-router';
+import { createPortal } from 'react-dom';
+
+function LoginPage() {
+}
+
+function LoginPagePortal (){
+  return createPortal(<LoginPage />, document.getElementById('portal'))
+}
+
+export default LoginPagePortal;
+
+```
+
+ahora tenemos renderizado el html en portal
+
+```html
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="portal">
+    <div class="loginPage"></div>
+  </div>
+  <div id="root"></div>
+```
+
+sin embargo desde el mismo de vista de react está en el mismo sitio. Y yo solo lo he movido en el dom. Si este componente estuviara reciviendo propiedades por ejemplo desde 
+
+parace una tontería pero tiene bastantes utilidades ¿cuales son?
+
+Te puede permitir abrir parte de la aplicacion en otra ventana completamente, entonces puedes tener un detalla de lo que sea en otra ventana y el usuario lo puede arrastar y llevarse a otro monitor distinto, todo puede acurrir en varias ventanas distintas. Desde el punto de vista de react todo sigue igual pero desde el DOM te lo llevas a otros sitios
+
+Vamos a mejorar el ejemplo de antes:
+
+```js
+function LoginPagePortal (){
+  const portalContaincer = useRef(document.createElement('div'));
+  
+  return createPortal(
+    <LoginPage />, 
+    portalContaincer.current
+  );
+}
+```
+
+esto `portalContaincer` es un div. Voy a meterlo dentro de una ventana que voy a crear nueva.
+
+para crea una nueva ventana necesito un efecto y cuando termine el primer render meto estwe div en una ventana nueva. Cuanod cargues el login el efecto te creará una nueva ventana.
+
+
+```js
+function LoginPagePortal ({count}){
+  const portalContainer = useRef(document.createElement('div'));
+
+  useEffect(() => {
+    const externalWindow = window.open(
+      '', '', 'width=600, heigth=400, left=200, top=200'
+      );
+    externalWindow.document.body.appendChild(portalContainer.current);
+  });
+
+  return createPortal(<LoginPage count={count}/>, portalContainer.current);
+}
+
+export default LoginPagePortal;
+
+```
+
+Verás que la ventana emergente no tiene estilos, pero aquí tiene un reportaje para dárselos :
+https://david-gilbertson.medium.com/using-a-react-16-portal-to-do-something-cool-2a2d627b0202
+
+
+Para guardar los estiles en la ventana emergente, copia los estilos que tenemos en el `document` que el document es donde hemos arrancado la aplicacion y los compia en `externalWindow.document` con la funcion copyStyles `copyStyles(document, externalWindow.document);`
+
+```js
+    copyStyles(document, externalWindow.document);
+```
+
+he creado la funcion en `scr/utils/copyStyles.js` 
+
+```js
+export default function copyStyles(sourceDoc, targetDoc) {
+  Array.from(sourceDoc.styleSheets).forEach(styleSheet => {
+    if (styleSheet.cssRules) {
+      // for <style> elements
+      const newStyleEl = sourceDoc.createElement('style');
+
+      Array.from(styleSheet.cssRules).forEach(cssRule => {
+        // write the text of each rule into the body of the style element
+        newStyleEl.appendChild(sourceDoc.createTextNode(cssRule.cssText));
+      });
+
+      targetDoc.head.appendChild(newStyleEl);
+    } else if (styleSheet.href) {
+      // for <link> elements loading CSS from a URL
+      const newLinkEl = sourceDoc.createElement('link');
+
+      newLinkEl.rel = 'stylesheet';
+      newLinkEl.href = styleSheet.href;
+      targetDoc.head.appendChild(newLinkEl);
+    }
+  });
+}
+```
+
+estas ventanas s eutilizan para:
+
+* **Popup Blocker**: The browser's popup blocker is preventing the window from opening. This is the most common reason. Users typically need to allow popups for the specific site, either by clicking on the popup blocker notification in the address bar or adjusting the browser settings.  
+* **Browser Extensions**: Certain browser extensions that are designed to block popups or scripts can prevent window.open from working correctly.  
+* **Browser Policy**: Some browsers have strict policies when it comes to opening new windows. For example, popups can be blocked if window.open is not directly triggered by a user action, like a click event.  
+* **Content Security Policy (CSP)**: If your site has a Content Security Policy in place, it may restrict the use of window.open depending on its directives.  
+
+Browser Bugs or Features: Occasionally, certain browsers may have bugs, or they might have features that affect how window.open works.
+
+### Dockers
+
+Vamos a ver como podemos dockerizar nuestra aplicacion. Para poner en marcha nuestra aplicacion sól necesitamos un servidor de archivos estáticos.
+
+Docker es una plataforma de contenedores que permite a los desarrolladores, operadores de sistemas (SysOps) y administradores de sistemas (SysAdmins) construir, ejecutar y compartir aplicaciones con contenedores. Los contenedores son esencialmente un paquete de software ligero que contiene todo lo necesario para ejecutar un pedazo de software, incluyendo el código, el entorno de ejecución, las bibliotecas y las dependencias. Docker se utiliza en aplicaciones por varias razones: Consistencia y Aislamiento, Desarrollo y Pruebas,Despliegue Rápido,Escala y Gestión,Microservicios,Integración Continua/Entrega Continua (CI/CD),Infraestructura como Código (IaC),Eficiencia de Recursos,
+
+En resumen, Docker ha transformado el desarrollo y despliegue de aplicaciones gracias a su facilidad de uso, portabilidad, eficiencia y la amplia adopción en la industria, que ha llevado a un ecosistema robusto de herramientas y plataformas compatibles.
+
+
+Con una serie de instrucciones le vas diciendo qué vas a construir.
+
+creo archivo `Dockerfie` en ./
+
+por un lado necesito 
+* construir mi aplicacion con `npm run build` en un primer paso necesito ejecutior esto `"build": "react-scripts build",` del archivo json y para eso necesito una imagende node porque tu puedes hacer eso ahora porque tiene un node.
+* entonces tendrás una serie de archivos estaticos de salida, un html, un css, un js , imagenes,etc esos ficheros se los pasamos una servidos enjaini y lo pasamos al servidor
+
+
+cuando en terminal lanzamos `npm run buid`
+
+```sh
+➜  FullStack_React_app_tweeter git:(main) npm run build
+
+> twitter-react@0.1.0 build
+> react-scripts build
+
+Creating an optimized production build...
+One of your dependencies, babel-preset-react-app, is importing the
+"@babel/plugin-proposal-private-property-in-object" package without
+declaring it in its dependencies. This is currently working because
+"@babel/plugin-proposal-private-property-in-object" is already in your
+node_modules folder for unrelated reasons, but it may break at any time.
+
+babel-preset-react-app is part of the create-react-app project, which
+is not maintianed anymore. It is thus unlikely that this bug will
+ever be fixed. Add "@babel/plugin-proposal-private-property-in-object" to
+your devDependencies to work around this error. This will make this message
+go away.
+  
+Compiled successfully.
+
+File sizes after gzip:
+
+  83.05 kB  build/static/js/main.b1d6c58f.js
+  1.31 kB   build/static/css/main.183258a4.css
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  npm install -g serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+```
+
+crea una carpeta con una serie de archivos estaticos dentro de `./build`
+
+
+```Dockerfile
+# se descargará esa imagen con el ejecutable de node
+FROM node:20-alpine as builder
+```
+
+mi directorio de trabaja en la imagen descargada creará un directorio de trabajo que lo voy a llamar `WORKDIR /app`. Copiaré el contenido del fichero `COPY package*.json ./` y lo copiará a la carpera /app. `RUN npm install`.
+
+```Dockerfile
+# bajo imagen y creo container
+FROM node:20-alpine as builder
+
+# dentro del contenedor creo carpeta app
+WORKDIR /app`
+
+# copio contenido package json
+COPY package*.json ./
+
+# Hagp instalacoin todas las dependencias
+RUN npm install 
+
+# copio todo el codigo
+COPY . .
+
+# Creo el ejecutable
+RUN nmp run build
+
+```
+
+Ahora en el container donde se esté ejecutando esto yo voy a tener una carpeta `build` lo que tengo que hacer es tomar esa imagen del buid y pasárselo a un container basado en `nginx`, entonces voy a descargar la imagen `# me descargo un contenedro muy ligero con un servidor nginx ; FROM nginx:stable-alpine`
+
+```Dockerfile
+# Utiliza una imagen base de node versión 20 con alpine como sistema operativo por ser ligero.
+FROM node:20-alpine as builder
+
+# Establece el directorio de trabajo en /app dentro del contenedor. Si no existe, lo crea.
+WORKDIR /app
+
+# Copia los archivos package.json y package-lock.json (si existe) al directorio de trabajo actual (/app).
+COPY package*.json ./
+
+# Ejecuta el comando npm install para instalar las dependencias definidas en package.json.
+RUN npm install 
+
+# Copia todos los archivos del directorio actual en el host al directorio de trabajo en el contenedor.
+COPY . .
+
+# Ejecuta el comando para construir la aplicación (por ejemplo, si es una aplicación React, esto crea la build de producción).
+RUN npm run build
+
+# Inicia una nueva etapa de construcción utilizando una imagen base de nginx, que es un servidor web ligero.
+FROM nginx:stable-alpine
+
+# Copia los archivos estáticos generados build al directorio de nginx donde servirá los archivos estáticos.
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Reemplaza la configuración por defecto de nginx con la configuración personalizada (si existe).
+COPY --from=builder /app/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Informa a Docker que el contenedor escuchará en el puerto 80 en tiempo de ejecución.
+EXPOSE 80 
+
+# Define el comando que se ejecutará cuando se inicie el contenedor.
+# Aquí está diciendo que ejecute nginx en primer plano.
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+
+
+
+
+
+
