@@ -1,3 +1,7 @@
+
+https://github.com/KeepCodingWeb15/twitter-react
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -4568,8 +4572,59 @@ CMD ["nginx", "-g", "daemon off;"]
 ```
 
 
+con `nginx.conf` le damos las indicaciones minimas para levantar en el puerto 80
+
+```conf
+server {
+    listen: 80;
+    location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html = 404;
+    }
+}
+```
 
 
+`dockerignore` le decimos qué fichermos no queremos que suban a la imagen.
 
+Arrancamos nuestro servidor.
+
+1. contruimos la imagen `docker build . -t twitter-react` va al directorio ./ buscar archivo `dockerfile` y segue las instruciones. La damos el nombre con `-t twitter.react`
+2. ... construyendo... ➜  FullStack_React_app_tweeter git:(main) ✗ docker build . -t twitter-react
+[+] Building 119.8s (17/17) FINISHED 
+3. He creado esta imagen, con 47 MB con la app preparada para lanzarla: ➜  FullStack_React_app_tweeter git:(main) ✗ docker image ls                   
+REPOSITORY           TAG       IMAGE ID       CREATED          SIZE
+twitter-react        latest    ceb2c5247302   46 seconds ago   47.4MB
+4. le tengo que decir en que imagen me vaso `docker container run -d -p 80:80 twitter-react:latest` con `-d` le dice que te devuelve el control de la consola, y con `-p 80:80` le hace un mapeo de puertos
+
+ya tienes tu contenedor corriendo  `docker container ls -a     `
+
+CONTAINER ID   IMAGE                  COMMAND                  CREATED          STATUS                        PORTS                                                    NAMES
+fdbf20ef33c9   twitter-react:latest   "/docker-entrypoint.…"   41 seconds ago   Exited (1) 40 seconds ago                                                              wonderful_almeida
+ 
+si te vas a `localhost:80` verás que ya funciona y si inspeccionas veras que el server es `nginx`
+
+
+Puedes 
+* parar el container con `docker container stop +NAME`
+* arrancar `docker container stop +NAME`
+* eliminar ``docker container rm +NAME`
+* volver a recrearlo `docker container run -d -p 80:80 twitter-react:latest`
+
+
+hub.docker.com/search?
+
+yo hace años que no instalo por ejemplo una base de datos, ni SQL ni MONGO porque es un royo, con docker la instalo y desintalo muy faoi
+
+```sh
+docker run --name some-mongo -d mongo:latest
+```
+Cuando ejecutas una imagen de MongoDB en tu computadora utilizando Docker, la capacidad de almacenamiento disponible para MongoDB dependerá de la configuración de tu Docker host. Específicamente, la capacidad será la misma que la del volumen o partición de tu sistema donde Docker almacena sus datos.
+
+Por defecto, MongoDB almacenará sus archivos de datos en /data/db dentro del contenedor. Si no has configurado un volumen Docker para persistir los datos, entonces el contenedor usará el sistema de archivos de la capa de escritura del contenedor, que está sujeto a limpieza si eliminas el contenedor.
+
+Si necesitas persistir los datos (lo cual es común para bases de datos), deberías montar un volumen cuando ejecutes el contenedor, como se muestra en el ejemplo de abajo:`docker run --name some-mongo -v /my/own/datadir:/data/db -d mongo`
+`
 
 
